@@ -103,11 +103,9 @@ export default function NewPlayer() {
                 onChange={(e) => setPosition(e.target.value)}
               >
                 <option value="GOL">GOL</option>
-                <option value="ZAG">ZAG</option>
-                <option value="LAT">LAT</option>
-                <option value="VOL">VOL</option>
-                <option value="MEI">MEI</option>
-                <option value="ATA">ATA</option>
+                <option value="FIXO">FIXO</option>
+                <option value="ALA">ALA</option>
+                <option value="PIVÔ">PIVÔ</option>
               </select>
             </label>
 
