@@ -7,6 +7,9 @@ export default function Squad() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
   async function load() {
     try {
       setLoading(true);
@@ -19,8 +22,21 @@ export default function Squad() {
     }
   }
 
+  async function loadMe() {
+    try {
+      setAuthLoading(true);
+      const me = await api.me();
+      setIsAdmin(me?.role === "admin");
+    } catch {
+      setIsAdmin(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadMe();
   }, []);
 
   return (
@@ -28,10 +44,11 @@ export default function Squad() {
       <div className="pageHead">
         <h1>Plantel</h1>
 
-        {/* Como /time está protegido, sempre pode mostrar */}
-        <Link className="btn" to="/novo">
-          Adicionar jogador
-        </Link>
+        {!authLoading && isAdmin && (
+          <Link className="btn" to="/novo">
+            Adicionar jogador
+          </Link>
+        )}
       </div>
 
       {loading ? (
