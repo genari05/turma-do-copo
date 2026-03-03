@@ -37,11 +37,9 @@ export default function Player() {
       const data = await api.getPlayer(id);
       setPlayer(data);
 
-      // stats
       setGoalsFinal(Number(data?.goals ?? 0));
       setAssistsFinal(Number(data?.assists ?? 0));
 
-      // edição
       setEditName(data?.name || "");
       setEditPosition(data?.position || "ATA");
       setPhotoFile(null);
@@ -68,14 +66,9 @@ export default function Player() {
     let alive = true;
 
     (async () => {
-      // carrega auth + jogador
-      try {
-        await loadMe();
-        if (!alive) return;
-        await loadPlayer();
-      } catch {
-        // erros já tratados nas funções
-      }
+      await loadMe();
+      if (!alive) return;
+      await loadPlayer();
     })();
 
     return () => {
@@ -83,6 +76,16 @@ export default function Player() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  function handleUnauthorized(e) {
+    const msg = String(e?.message || "");
+    if (msg.includes("401") || msg.toLowerCase().includes("não autorizado")) {
+      alert("Sessão de ADM expirada. Faça login novamente.");
+      nav("/login", { replace: true });
+      return true;
+    }
+    return false;
+  }
 
   // =========================
   // Atualizar stats
@@ -105,8 +108,9 @@ export default function Player() {
       setSavingStats(true);
       await api.addStats(id, { goals_delta: goalsDelta, assists_delta: assistsDelta });
       await loadPlayer();
-      await loadMe(); // revalida sessão
+      alert("Estatísticas atualizadas!");
     } catch (e) {
+      if (handleUnauthorized(e)) return;
       alert(e.message);
     } finally {
       setSavingStats(false);
@@ -128,23 +132,20 @@ export default function Player() {
     try {
       setSavingEdit(true);
 
-      // se tiver foto -> multipart
       if (photoFile) {
         const formData = new FormData();
         formData.append("name", name);
         formData.append("position", position);
         formData.append("photo", photoFile);
-
         await api.updatePlayerForm(id, formData);
       } else {
-        // sem foto -> JSON
         await api.updatePlayerJSON(id, { name, position });
       }
 
       await loadPlayer();
-      await loadMe();
       alert("Jogador atualizado!");
     } catch (e) {
+      if (handleUnauthorized(e)) return;
       alert(e.message);
     } finally {
       setSavingEdit(false);
@@ -165,6 +166,7 @@ export default function Player() {
       alert("Jogador excluído!");
       nav("/time");
     } catch (e) {
+      if (handleUnauthorized(e)) return;
       alert(e.message);
     }
   }
@@ -254,7 +256,7 @@ export default function Player() {
                   type="number"
                   min="0"
                   value={goalsFinal}
-                  onChange={(e) => setGoalsFinal(e.target.value)}
+                  onChange={(e) => setGoalsFinal(Number(e.target.value))}
                 />
                 <div className="muted small">Atual: {player.goals}</div>
               </div>
@@ -273,7 +275,7 @@ export default function Player() {
                   type="number"
                   min="0"
                   value={assistsFinal}
-                  onChange={(e) => setAssistsFinal(e.target.value)}
+                  onChange={(e) => setAssistsFinal(Number(e.target.value))}
                 />
                 <div className="muted small">Atual: {player.assists}</div>
               </div>
@@ -285,10 +287,6 @@ export default function Player() {
                 <button className="btn" disabled={savingStats} onClick={saveStats}>
                   {savingStats ? "Salvando..." : "Salvar"}
                 </button>
-
-                <div className="muted small" style={{ marginTop: 8 }}>
-                  (Diminuir valores: depois com senha/admin.)
-                </div>
               </div>
             </div>
 
@@ -367,10 +365,6 @@ export default function Player() {
                   <button className="btn outline" type="button" onClick={() => loadPlayer()}>
                     Cancelar
                   </button>
-                </div>
-
-                <div className="muted small">
-                  (Somente ADM consegue editar/deletar/alterar stats.)
                 </div>
               </div>
             </div>
