@@ -27,6 +27,8 @@ export default function Squad() {
     <section>
       <div className="pageHead">
         <h1>Plantel</h1>
+
+        {/* Como /time está protegido, sempre pode mostrar */}
         <Link className="btn" to="/novo">
           Adicionar jogador
         </Link>

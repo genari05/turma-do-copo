@@ -11,6 +11,10 @@ export default function Player() {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // auth local (sem Context)
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // salvar stats
   const [savingStats, setSavingStats] = useState(false);
   const [goalsFinal, setGoalsFinal] = useState(0);
@@ -27,7 +31,7 @@ export default function Player() {
     return URL.createObjectURL(photoFile);
   }, [photoFile]);
 
-  async function load() {
+  async function loadPlayer() {
     try {
       setLoading(true);
       const data = await api.getPlayer(id);
@@ -48,12 +52,40 @@ export default function Player() {
     }
   }
 
+  async function loadMe() {
+    try {
+      setAuthLoading(true);
+      const me = await api.me(); // { role }
+      setIsAdmin(me?.role === "admin");
+    } catch {
+      setIsAdmin(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
   useEffect(() => {
-    load();
+    let alive = true;
+
+    (async () => {
+      // carrega auth + jogador
+      try {
+        await loadMe();
+        if (!alive) return;
+        await loadPlayer();
+      } catch {
+        // erros já tratados nas funções
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // =========================
-  // Atualizar stats (já existia)
+  // Atualizar stats
   // =========================
   async function saveStats() {
     if (!player) return;
@@ -72,7 +104,8 @@ export default function Player() {
     try {
       setSavingStats(true);
       await api.addStats(id, { goals_delta: goalsDelta, assists_delta: assistsDelta });
-      await load();
+      await loadPlayer();
+      await loadMe(); // revalida sessão
     } catch (e) {
       alert(e.message);
     } finally {
@@ -108,7 +141,8 @@ export default function Player() {
         await api.updatePlayerJSON(id, { name, position });
       }
 
-      await load();
+      await loadPlayer();
+      await loadMe();
       alert("Jogador atualizado!");
     } catch (e) {
       alert(e.message);
@@ -141,15 +175,17 @@ export default function Player() {
   const avatarSrc = photoPreview
     ? photoPreview
     : player.photo_url
-      ? resolvePhotoURL(player.photo_url)
-      : DEFAULT_AVATAR;
+    ? resolvePhotoURL(player.photo_url)
+    : DEFAULT_AVATAR;
+
+  const showAdmin = !authLoading && isAdmin;
 
   return (
     <section>
       <div className="pageHead">
         <div>
           <h1>Perfil do jogador</h1>
-          <div className="muted">Totais, edição e estatísticas.</div>
+          <div className="muted">Totais e informações.</div>
         </div>
 
         <Link className="btn outline" to="/time">
@@ -189,153 +225,171 @@ export default function Player() {
                 <div className="totalValue">{player.assists}</div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="profileDivider" />
-
-        {/* ====== ATUALIZAR STATS ====== */}
-        <div className="editGridPro">
-          <div className="editCard">
-            <div className="editCardHead">
-              <div>
-                <div className="editTitle">Atualizar Gols</div>
-                <div className="muted small">Valor final</div>
+            {!authLoading && !isAdmin && (
+              <div className="muted small" style={{ marginTop: 10 }}>
+                Você está como visitante. Para editar/atualizar/excluir, entre como ADM.
               </div>
-              <div className="editBadge blue">⚽</div>
-            </div>
-
-            <input
-              className="editNumber"
-              type="number"
-              min="0"
-              value={goalsFinal}
-              onChange={(e) => setGoalsFinal(e.target.value)}
-            />
-            <div className="muted small">Atual: {player.goals}</div>
+            )}
           </div>
+        </div>
 
-          <div className="editCard">
-            <div className="editCardHead">
-              <div>
-                <div className="editTitle">Atualizar Assistências</div>
-                <div className="muted small">Valor final</div>
+        {showAdmin && (
+          <>
+            <div className="profileDivider" />
+
+            {/* ====== ATUALIZAR STATS ====== */}
+            <div className="editGridPro">
+              <div className="editCard">
+                <div className="editCardHead">
+                  <div>
+                    <div className="editTitle">Atualizar Gols</div>
+                    <div className="muted small">Valor final</div>
+                  </div>
+                  <div className="editBadge blue">⚽</div>
+                </div>
+
+                <input
+                  className="editNumber"
+                  type="number"
+                  min="0"
+                  value={goalsFinal}
+                  onChange={(e) => setGoalsFinal(e.target.value)}
+                />
+                <div className="muted small">Atual: {player.goals}</div>
               </div>
-              <div className="editBadge yellow">🅰️</div>
+
+              <div className="editCard">
+                <div className="editCardHead">
+                  <div>
+                    <div className="editTitle">Atualizar Assistências</div>
+                    <div className="muted small">Valor final</div>
+                  </div>
+                  <div className="editBadge yellow">🅰️</div>
+                </div>
+
+                <input
+                  className="editNumber"
+                  type="number"
+                  min="0"
+                  value={assistsFinal}
+                  onChange={(e) => setAssistsFinal(e.target.value)}
+                />
+                <div className="muted small">Atual: {player.assists}</div>
+              </div>
+
+              <div className="saveCard">
+                <div className="saveTitle">Salvar estatísticas</div>
+                <div className="muted small">Aplica os valores finais.</div>
+
+                <button className="btn" disabled={savingStats} onClick={saveStats}>
+                  {savingStats ? "Salvando..." : "Salvar"}
+                </button>
+
+                <div className="muted small" style={{ marginTop: 8 }}>
+                  (Diminuir valores: depois com senha/admin.)
+                </div>
+              </div>
             </div>
 
-            <input
-              className="editNumber"
-              type="number"
-              min="0"
-              value={assistsFinal}
-              onChange={(e) => setAssistsFinal(e.target.value)}
-            />
-            <div className="muted small">Atual: {player.assists}</div>
-          </div>
+            <div className="profileDivider" />
 
-          <div className="saveCard">
-            <div className="saveTitle">Salvar estatísticas</div>
-            <div className="muted small">Aplica os valores finais.</div>
+            {/* ====== EDITAR JOGADOR ====== */}
+            <div className="newPlayerGrid">
+              <div className="newPlayerPhotoCard">
+                <div className="newPlayerPhotoRing">
+                  <img
+                    className="newPlayerPhoto"
+                    src={avatarSrc}
+                    alt="Foto do jogador"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_AVATAR;
+                    }}
+                  />
+                </div>
 
-            <button className="btn" disabled={savingStats} onClick={saveStats}>
-              {savingStats ? "Salvando..." : "Salvar"}
-            </button>
+                <label className="fileBtn">
+                  Trocar foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                  />
+                </label>
 
-            <div className="muted small" style={{ marginTop: 8 }}>
-              (Diminuir valores: depois com senha/admin.)
+                <div className="muted small" style={{ textAlign: "center" }}>
+                  Se não selecionar, mantém a foto atual.
+                </div>
+              </div>
+
+              <div className="newPlayerFormCard">
+                <h2>Editar jogador</h2>
+
+                <label className="label">
+                  Nome
+                  <input
+                    className="input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </label>
+
+                <label className="label">
+                  Posição
+                  <select
+                    className="input"
+                    value={editPosition}
+                    onChange={(e) => setEditPosition(e.target.value)}
+                  >
+                    <option value="GOL">GOL</option>
+                    <option value="FIXO">FIXO</option>
+                    <option value="ALA">ALA</option>
+                    <option value="PIVÔ">PIVÔ</option>
+                    <option value="ATA">ATA</option>
+                    <option value="ZAG">ZAG</option>
+                    <option value="LAT">LAT</option>
+                    <option value="VOL">VOL</option>
+                    <option value="MEI">MEI</option>
+                  </select>
+                </label>
+
+                <div className="newPlayerActions">
+                  <button
+                    className="btn"
+                    disabled={savingEdit}
+                    onClick={saveEdit}
+                    type="button"
+                  >
+                    {savingEdit ? "Salvando..." : "Salvar edição"}
+                  </button>
+
+                  <button className="btn outline" type="button" onClick={() => loadPlayer()}>
+                    Cancelar
+                  </button>
+                </div>
+
+                <div className="muted small">
+                  (Somente ADM consegue editar/deletar/alterar stats.)
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="profileDivider" />
+            <div className="profileDivider" />
 
-        {/* ====== EDITAR JOGADOR ====== */}
-        <div className="newPlayerGrid">
-          <div className="newPlayerPhotoCard">
-            <div className="newPlayerPhotoRing">
-              <img
-                className="newPlayerPhoto"
-                src={avatarSrc}
-                alt="Foto do jogador"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = DEFAULT_AVATAR;
-                }}
-              />
-            </div>
+            {/* ====== DELETAR ====== */}
+            <div className="dangerZone">
+              <div>
+                <h2>Excluir jogador</h2>
+                <div className="muted small">Esta ação não pode ser desfeita.</div>
+              </div>
 
-            <label className="fileBtn">
-              Trocar foto
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-              />
-            </label>
-
-            <div className="muted small" style={{ textAlign: "center" }}>
-              Se não selecionar, mantém a foto atual.
-            </div>
-          </div>
-
-          <div className="newPlayerFormCard">
-            <h2>Editar jogador</h2>
-
-            <label className="label">
-              Nome
-              <input
-                className="input"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
-            </label>
-
-            <label className="label">
-              Posição
-              <select
-                className="input"
-                value={editPosition}
-                onChange={(e) => setEditPosition(e.target.value)}
-              >
-                <option value="GOL">GOL</option>
-                <option value="FIXO">FIXO</option>
-                <option value="ALA">ALA</option>
-                <option value="PIVÔ">PIVÔ</option>
-              </select>
-            </label>
-
-            <div className="newPlayerActions">
-              <button className="btn" disabled={savingEdit} onClick={saveEdit} type="button">
-                {savingEdit ? "Salvando..." : "Salvar edição"}
+              <button className="btn danger" onClick={removePlayer}>
+                Excluir jogador
               </button>
-
-              <button className="btn outline" type="button" onClick={() => load()}>
-                Cancelar
-              </button>
             </div>
-
-            <div className="muted small">
-              (Depois a gente coloca senha para editar/deletar/alterar stats.)
-            </div>
-          </div>
-        </div>
-
-        <div className="profileDivider" />
-
-        {/* ====== DELETAR ====== */}
-        <div className="dangerZone">
-          <div>
-            <h2>Excluir jogador</h2>
-            <div className="muted small">
-              Esta ação não pode ser desfeita.
-            </div>
-          </div>
-
-          <button className="btn danger" onClick={removePlayer}>
-            Excluir jogador
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </section>
   );

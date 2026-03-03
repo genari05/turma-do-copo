@@ -4,8 +4,9 @@ async function request(path, options = {}) {
   const { isForm, ...rest } = options;
 
   const res = await fetch(`${API_URL}${path}`, {
+    credentials: "include", // ✅ envia/recebe cookie de sessão
     headers: isForm
-      ? { ...(rest.headers || {}) } // não define Content-Type
+      ? { ...(rest.headers || {}) }
       : { "Content-Type": "application/json", ...(rest.headers || {}) },
     ...rest,
   });
@@ -27,36 +28,28 @@ export function resolvePhotoURL(photo_url) {
 }
 
 export const api = {
+  // auth
+  me: () => request("/auth/me"),
+  login: (password) =>
+    request("/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
+  logout: () => request("/auth/logout", { method: "POST" }),
+
+  // players (público)
   listPlayers: () => request("/players"),
   getPlayer: (id) => request(`/players/${id}`),
 
+  // players (admin)
   createPlayer: (formData) =>
     request("/players", { method: "POST", body: formData, isForm: true }),
 
   addStats: (id, payload) =>
-    request(`/players/${id}/stats`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+    request(`/players/${id}/stats`, { method: "POST", body: JSON.stringify(payload) }),
 
-  // ✅ PUT JSON (nome/posição)
   updatePlayerJSON: (id, payload) =>
-    request(`/players/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    }),
+    request(`/players/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
 
-  // ✅ PUT multipart (nome/posição/foto)
   updatePlayerForm: (id, formData) =>
-    request(`/players/${id}`, {
-      method: "PUT",
-      body: formData,
-      isForm: true,
-    }),
+    request(`/players/${id}`, { method: "PUT", body: formData, isForm: true }),
 
-  // ✅ DELETE
-  deletePlayer: (id) =>
-    request(`/players/${id}`, {
-      method: "DELETE",
-    }),
+  deletePlayer: (id) => request(`/players/${id}`, { method: "DELETE" }),
 };

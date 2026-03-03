@@ -1107,3 +1107,46 @@ h2{
   background: rgba(220, 38, 38, 0.14);
   font-weight: 950;
 }
+
+.entryCard, .loginCard{
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, rgba(0,0,0,.08));
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: var(--shadow-soft, 0 10px 24px rgba(0,0,0,.06));
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.entryGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.entryBtn{
+  text-align:left;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.06);
+  cursor:pointer;
+  transition: transform .08s ease, box-shadow .12s ease;
+}
+
+.entryBtn:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(2,6,23,0.10);
+}
+
+.entryTitle{
+  font-weight: 950;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+
+@media (max-width: 780px){
+  .entryGrid{ grid-template-columns: 1fr; }
+}

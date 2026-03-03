@@ -29,7 +29,7 @@ export default function Header() {
       {/* MENU ABAIXO DAS LISTRAS */}
       <div className="menuBar">
         <nav className="nav container">
-          <NavLink to="/" end className={({ isActive }) => isActive ? "navLink active" : "navLink"}>
+          <NavLink to="/inicio" end className={({ isActive }) => isActive ? "navLink active" : "navLink"}>
             Início
           </NavLink>
 

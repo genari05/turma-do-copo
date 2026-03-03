@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { api } from "../api/client.js";
 import { useNavigate, Link } from "react-router-dom";
 
-const DEFAULT_AVATAR = "/icon.png"; // seu ícone no public
+const DEFAULT_AVATAR = "/avatar-default.png";
 
 export default function NewPlayer() {
   const nav = useNavigate();
@@ -103,23 +103,22 @@ export default function NewPlayer() {
                 onChange={(e) => setPosition(e.target.value)}
               >
                 <option value="GOL">GOL</option>
-                <option value="FIXO">FIXO</option>
-                <option value="ALA">ALA</option>
-                <option value="PIVÔ">PIVÔ</option>
+                <option value="ZAG">ZAG</option>
+                <option value="LAT">LAT</option>
+                <option value="VOL">VOL</option>
+                <option value="MEI">MEI</option>
+                <option value="ATA">ATA</option>
               </select>
             </label>
 
             <div className="newPlayerActions">
-              <button className="btn" disabled={saving}>
+              <button className="btn" disabled={saving} type="submit">
                 {saving ? "Cadastrando..." : "Cadastrar jogador"}
               </button>
+
               <Link className="btn outline" to="/time">
                 Cancelar
               </Link>
-            </div>
-
-            <div className="muted small">
-              Dica: você pode cadastrar sem foto e adicionar depois (a gente faz essa tela depois).
             </div>
           </div>
         </div>
