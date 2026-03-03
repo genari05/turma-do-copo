@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,16 +11,11 @@ import (
 
 const cookieName = "tdc_session"
 
-var loginLimiter = NewLimiter(8, 2*time.Minute) // 8 tentativas / 2min por IP
+func isProd() bool {
+	return os.Getenv("RENDER") != "" || strings.ToLower(os.Getenv("ENV")) == "production"
+}
 
 func Login(c *gin.Context) {
-	// rate limit por IP
-	ip := c.ClientIP()
-	if !loginLimiter.Allow(ip) {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "muitas tentativas, aguarde um pouco"})
-		return
-	}
-
 	var body struct {
 		Password string `json:"password"`
 	}
@@ -28,49 +24,74 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	expected := os.Getenv("ADMIN_PASSWORD")
-	if expected == "" {
+	if os.Getenv("ADMIN_PASSWORD") == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "ADMIN_PASSWORD não definido"})
 		return
 	}
 
-	if body.Password != expected {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "senha incorreta"})
+	if body.Password != os.Getenv("ADMIN_PASSWORD") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "senha inválida"})
 		return
 	}
 
 	token, err := IssueAdminToken()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao criar sessão"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Cookie HttpOnly (JS não lê)
-	secure := false // em produção com HTTPS: true
-	c.SetCookie(cookieName, token, 7*24*3600, "/", "", secure, true)
+	secure := isProd()
+
+	// ✅ se você chama o Render direto (domínios diferentes), precisa None
+	sameSite := http.SameSiteNoneMode
+
+	// ✅ se você estiver usando proxy /api no Vercel, pode usar Lax:
+	// sameSite := http.SameSiteLaxMode
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     cookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   7 * 24 * 3600,
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+	})
 
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{"role": "admin"}})
 }
 
 func Logout(c *gin.Context) {
-	secure := false
-	// expira cookie
-	c.SetCookie(cookieName, "", -1, "/", "", secure, true)
+	secure := isProd()
+	sameSite := http.SameSiteNoneMode
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     cookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+	})
+
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{"ok": true}})
 }
 
 func Me(c *gin.Context) {
-	token, err := c.Cookie(cookieName)
-	if err != nil || token == "" {
+	cookie, err := c.Request.Cookie(cookieName)
+	if err != nil || cookie.Value == "" {
 		c.JSON(http.StatusOK, gin.H{"data": gin.H{"role": "visitor"}})
 		return
 	}
 
-	claims, err := ParseToken(token)
-	if err != nil || claims.Role != "admin" {
+	claims, err := ParseToken(cookie.Value)
+	if err != nil || claims.Role == "" {
 		c.JSON(http.StatusOK, gin.H{"data": gin.H{"role": "visitor"}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"role": "admin"}})
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{"role": claims.Role}})
 }
