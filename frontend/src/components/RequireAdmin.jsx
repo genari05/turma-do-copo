@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { api } from "../api/client.js";
 
 export default function RequireAdmin() {
-  const [ok, setOk] = useState(null); // null = carregando, true/false
+  const [ok, setOk] = useState(null);
   const loc = useLocation();
 
   useEffect(() => {
@@ -11,7 +11,7 @@ export default function RequireAdmin() {
 
     (async () => {
       try {
-        const data = await api.me(); // espera { role }
+        const data = await api.me();
         if (!alive) return;
         setOk(data?.role === "admin");
       } catch {

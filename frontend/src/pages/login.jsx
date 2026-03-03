@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { api } from "../api/client.js";
 
 export default function Login() {
@@ -11,11 +11,11 @@ export default function Login() {
 
   async function submit(e) {
     e.preventDefault();
+
     try {
       setLoading(true);
       await api.login(password);
 
-      // volta pra rota que ele tentou abrir, ou vai pro /inicio
       const to = loc.state?.from?.pathname || "/inicio";
       nav(to, { replace: true });
     } catch (err) {
@@ -30,24 +30,19 @@ export default function Login() {
       <div className="pageHead">
         <div>
           <h1>Login ADM</h1>
-          <div className="muted">Acesso para editar o time.</div>
+          <div className="muted">Acesso administrativo</div>
         </div>
-        <Link className="btn outline" to="/entrada">
-          Voltar
-        </Link>
+        <Link className="btn outline" to="/entrada">Voltar</Link>
       </div>
 
       <form className="loginCard" onSubmit={submit}>
-        <label className="label">
-          Senha
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Digite a senha"
-          />
-        </label>
+        <input
+          className="input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Digite a senha"
+        />
 
         <button className="btn" disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
