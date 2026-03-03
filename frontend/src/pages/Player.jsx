@@ -344,11 +344,6 @@ export default function Player() {
                     <option value="FIXO">FIXO</option>
                     <option value="ALA">ALA</option>
                     <option value="PIVÔ">PIVÔ</option>
-                    <option value="ATA">ATA</option>
-                    <option value="ZAG">ZAG</option>
-                    <option value="LAT">LAT</option>
-                    <option value="VOL">VOL</option>
-                    <option value="MEI">MEI</option>
                   </select>
                 </label>
 
