@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { api } from "../api/client.js";
+import { api, resolvePhotoURL } from "../api/client.js";
 import { Link } from "react-router-dom";
+
+const DEFAULT_AVATAR = "/icon.png";
 
 function topN(arr, key, n = 7) {
   return [...arr]
@@ -42,6 +44,7 @@ export default function Home() {
       <div className="pageHead">
         <div>
           <h1>Estatísticas do time</h1>
+          <div className="muted">Rankings automáticos com base nos jogadores cadastrados.</div>
         </div>
         <Link className="btn outline" to="/time">
           Ver Time
@@ -52,6 +55,7 @@ export default function Home() {
         <div className="muted">Carregando...</div>
       ) : (
         <>
+          {/* Mini cards */}
           <div className="gridCards">
             <div className="card mini" data-variant="blue">
               <div className="miniHead">
@@ -103,8 +107,12 @@ export default function Home() {
 
                         <img
                           className="rankAvatar"
-                          src={p.photo_url || "https://via.placeholder.com/96x96.png?text=Foto"}
+                          src={p.photo_url ? resolvePhotoURL(p.photo_url) : DEFAULT_AVATAR}
                           alt={p.name}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = DEFAULT_AVATAR;
+                          }}
                         />
 
                         <div className="rankMeta">
@@ -142,8 +150,12 @@ export default function Home() {
 
                         <img
                           className="rankAvatar"
-                          src={p.photo_url || "https://via.placeholder.com/96x96.png?text=Foto"}
+                          src={p.photo_url ? resolvePhotoURL(p.photo_url) : DEFAULT_AVATAR}
                           alt={p.name}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = DEFAULT_AVATAR;
+                          }}
                         />
 
                         <div className="rankMeta">

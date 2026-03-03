@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 export default function Header() {
-  const logoSrc = "logo_time.gif"; // coloque sua imagem na pasta public
+  const logoSrc = "/logo_time.gif"; // coloque sua imagem na pasta public
 
   return (
     <header className="header">

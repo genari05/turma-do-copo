@@ -8,14 +8,16 @@ import (
 
 func RegisterRoutes(r *gin.Engine, db *sql.DB) {
 	repo := NewRepository(db)
-	svc := NewService(repo)
-	ctl := NewController(svc)
+	service := NewService(repo)
+	controller := NewController(service)
 
-	group := r.Group("/players")
+	grupo := r.Group("/players")
 	{
-		group.GET("", ctl.List)
-		group.GET("/:id", ctl.GetByID)
-		group.POST("", ctl.Create)
-		group.POST("/:id/stats", ctl.AddStats)
+		grupo.GET("", controller.List)
+		grupo.GET("/:id", controller.GetByID)
+		grupo.POST("/:id/stats", controller.AddStats)
+
+		// ✅ CREATE com upload (multipart/form-data)
+		grupo.POST("", controller.Create)
 	}
 }

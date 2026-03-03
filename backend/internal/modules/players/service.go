@@ -1,14 +1,10 @@
 package players
 
-import "errors"
-
-var ErrInvalidDelta = errors.New("delta inválido")
-var ErrInvalidPlayer = errors.New("jogador inválido")
-
 type Service interface {
 	ListPlayers() ([]Player, error)
 	GetPlayer(id string) (Player, error)
 	AddPlayerStats(id string, goalsDelta int, assistsDelta int) (Player, error)
+
 	CreatePlayer(name, position, photoURL string) (Player, error)
 }
 
@@ -39,14 +35,5 @@ func (s *service) CreatePlayer(name, position, photoURL string) (Player, error) 
 	if name == "" || position == "" {
 		return Player{}, ErrInvalidPlayer
 	}
-
-	p := Player{
-		Name:     name,
-		Position: position,
-		PhotoURL: photoURL,
-		Goals:    0,
-		Assists:  0,
-	}
-
-	return s.repo.Create(p)
+	return s.repo.Create(name, position, photoURL)
 }

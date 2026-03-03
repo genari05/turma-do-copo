@@ -1,72 +1,127 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { api } from "../api/client.js";
 import { useNavigate, Link } from "react-router-dom";
 
+const DEFAULT_AVATAR = "/icon.png"; // seu ícone no public
+
 export default function NewPlayer() {
   const nav = useNavigate();
+
   const [name, setName] = useState("");
-  const [position, setPosition] = useState("PIVÔ");
-  const [photoURL, setPhotoURL] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [position, setPosition] = useState("ATA");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const previewURL = useMemo(() => {
+    if (!photoFile) return null;
+    return URL.createObjectURL(photoFile);
+  }, [photoFile]);
 
   async function submit(e) {
     e.preventDefault();
+
+    if (!name.trim()) {
+      alert("Informe o nome do jogador.");
+      return;
+    }
+
     try {
-      setLoading(true);
-      const created = await api.createPlayer({
-        name,
-        position,
-        photo_url: photoURL,
-      });
+      setSaving(true);
+
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("position", position);
+
+      if (photoFile) formData.append("photo", photoFile);
+
+      const created = await api.createPlayer(formData);
       nav(`/jogador/${created.id}`);
     } catch (err) {
       alert(err.message);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
   return (
     <section>
       <div className="pageHead">
-        <h1>Novo jogador</h1>
-        <Link className="btn outline" to="/plantel">
+        <div>
+          <h1>Novo jogador</h1>
+          <div className="muted">Cadastre o jogador e envie a foto (opcional).</div>
+        </div>
+        <Link className="btn outline" to="/time">
           Voltar
         </Link>
       </div>
 
-      <form className="card form" onSubmit={submit}>
-        <label className="label">
-          Nome
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João" />
-        </label>
+      <form className="newPlayerPro" onSubmit={submit}>
+        <div className="newPlayerGrid">
+          <div className="newPlayerPhotoCard">
+            <div className="newPlayerPhotoRing">
+              <img
+                className="newPlayerPhoto"
+                src={previewURL || DEFAULT_AVATAR}
+                alt="Foto do jogador"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = DEFAULT_AVATAR;
+                }}
+              />
+            </div>
 
-        <label className="label">
-          Posição
-          <select className="input" value={position} onChange={(e) => setPosition(e.target.value)}>
-            <option value="GOL">GOL</option>
-            <option value="FIXO">FIXO</option>
-            <option value="ALA">ALA</option>
-            <option value="PIVÔ">PIVÔ</option>
-          </select>
-        </label>
+            <label className="fileBtn">
+              Escolher foto
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+              />
+            </label>
 
-        <label className="label">
-          Foto (URL)
-          <input
-            className="input"
-            value={photoURL}
-            onChange={(e) => setPhotoURL(e.target.value)}
-            placeholder="https://..."
-          />
-        </label>
+            <div className="muted small" style={{ textAlign: "center" }}>
+              Se não enviar, usamos o ícone padrão.
+            </div>
+          </div>
 
-        <button className="btn" disabled={loading}>
-          {loading ? "Salvando..." : "Cadastrar"}
-        </button>
+          <div className="newPlayerFormCard">
+            <label className="label">
+              Nome
+              <input
+                className="input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: João"
+              />
+            </label>
 
-        <div className="muted small">
-          Dica: por enquanto você pode deixar a foto vazia.
+            <label className="label">
+              Posição
+              <select
+                className="input"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+              >
+                <option value="GOL">GOL</option>
+                <option value="FIXO">FIXO</option>
+                <option value="ALA">ALA</option>
+                <option value="PIVÔ">PIVÔ</option>
+              </select>
+            </label>
+
+            <div className="newPlayerActions">
+              <button className="btn" disabled={saving}>
+                {saving ? "Cadastrando..." : "Cadastrar jogador"}
+              </button>
+              <Link className="btn outline" to="/time">
+                Cancelar
+              </Link>
+            </div>
+
+            <div className="muted small">
+              Dica: você pode cadastrar sem foto e adicionar depois (a gente faz essa tela depois).
+            </div>
+          </div>
         </div>
       </form>
     </section>

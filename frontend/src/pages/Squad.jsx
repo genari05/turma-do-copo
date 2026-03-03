@@ -39,7 +39,7 @@ export default function Squad() {
       ) : (
         <div className="grid">
           {players.map((p) => (
-            <PlayerCard key={p.id} player={p} onUpdated={load} />
+            <PlayerCard key={p.id} player={p} />
           ))}
         </div>
       )}

@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api } from "../api/client.js";
+import { api, resolvePhotoURL } from "../api/client.js";
+
+const DEFAULT_AVATAR = "/icon.png";
 
 export default function Player() {
   const { id } = useParams();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [goalsDelta, setGoalsDelta] = useState(0);
-  const [assistsDelta, setAssistsDelta] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  const [goalsFinal, setGoalsFinal] = useState(0);
+  const [assistsFinal, setAssistsFinal] = useState(0);
 
   async function load() {
     try {
       setLoading(true);
       const data = await api.getPlayer(id);
       setPlayer(data);
+
+      setGoalsFinal(Number(data?.goals ?? 0));
+      setAssistsFinal(Number(data?.assists ?? 0));
     } catch (e) {
       alert(e.message);
     } finally {
@@ -25,17 +32,28 @@ export default function Player() {
     load();
   }, [id]);
 
-  async function submitAdd() {
+  async function save() {
+    if (!player) return;
+
+    const newGoals = Math.max(0, Number(goalsFinal) || 0);
+    const newAssists = Math.max(0, Number(assistsFinal) || 0);
+
+    const goalsDelta = newGoals - (player.goals || 0);
+    const assistsDelta = newAssists - (player.assists || 0);
+
+    if (goalsDelta < 0 || assistsDelta < 0) {
+      alert("Para diminuir valores, vamos liberar isso depois com senha/admin.");
+      return;
+    }
+
     try {
-      await api.addStats(id, {
-        goals_delta: Number(goalsDelta) || 0,
-        assists_delta: Number(assistsDelta) || 0,
-      });
-      setGoalsDelta(0);
-      setAssistsDelta(0);
+      setSaving(true);
+      await api.addStats(id, { goals_delta: goalsDelta, assists_delta: assistsDelta });
       await load();
     } catch (e) {
       alert(e.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -45,69 +63,104 @@ export default function Player() {
   return (
     <section>
       <div className="pageHead">
-        <h1>Jogador</h1>
-        <Link className="btn outline" to="/plantel">
+        <div>
+          <h1>Perfil do jogador</h1>
+          <div className="muted">Totais e atualização de estatísticas.</div>
+        </div>
+
+        <Link className="btn outline" to="/time">
           Voltar
         </Link>
       </div>
 
-      <div className="card playerProfile">
-        <div className="profileTop">
-          <img
-            className="avatar big"
-            src={player.photo_url || "https://via.placeholder.com/128x128.png?text=Foto"}
-            alt={player.name}
-          />
-          <div>
-            <div className="playerName big">{player.name}</div>
-            <div className="playerPos">{player.position}</div>
+      <div className="profilePro">
+        <div className="profileTopPro">
+          <div className="profileAvatarRing">
+            <img
+              className="profileAvatarPro"
+              src={player.photo_url ? resolvePhotoURL(player.photo_url) : DEFAULT_AVATAR}
+              alt={player.name}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = DEFAULT_AVATAR;
+              }}
+            />
+          </div>
 
-            <div className="playerStats">
-              <div className="statPill">
-                <span className="statLabel">Gols</span>
-                <span className="statValue">{player.goals}</span>
+          <div className="profileInfoPro">
+            <div className="profileNamePro">{player.name}</div>
+
+            <div className="profileTagRow">
+              <span className="profileTag">{player.position}</span>
+            </div>
+
+            <div className="profileTotals">
+              <div className="totalPill">
+                <div className="totalLabel">Gols</div>
+                <div className="totalValue">{player.goals}</div>
               </div>
-              <div className="statPill">
-                    <span className="statLabel">Assistências</span>               
-                    <span className="statValue">{player.assists}</span>
+
+              <div className="totalPill">
+                <div className="totalLabel">Assistências</div>
+                <div className="totalValue">{player.assists}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="divider" />
+        <div className="profileDivider" />
 
-        <h2>Adicionar estatísticas</h2>
-        <div className="formRow">
-          <label className="label">
-            + Gols
+        <div className="editGridPro">
+          <div className="editCard">
+            <div className="editCardHead">
+              <div>
+                <div className="editTitle">Atualizar Gols</div>
+                <div className="muted small">Valor final</div>
+              </div>
+              <div className="editBadge blue">⚽</div>
+            </div>
+
             <input
-              className="input"
+              className="editNumber"
               type="number"
               min="0"
-              value={goalsDelta}
-              onChange={(e) => setGoalsDelta(e.target.value)}
+              value={goalsFinal}
+              onChange={(e) => setGoalsFinal(e.target.value)}
             />
-          </label>
+            <div className="muted small">Atual: {player.goals}</div>
+          </div>
 
-          <label className="label">
-            + Assistências
+          <div className="editCard">
+            <div className="editCardHead">
+              <div>
+                <div className="editTitle">Atualizar Assistências</div>
+                <div className="muted small">Valor final</div>
+              </div>
+              <div className="editBadge yellow">🅰️</div>
+            </div>
+
             <input
-              className="input"
+              className="editNumber"
               type="number"
               min="0"
-              value={assistsDelta}
-              onChange={(e) => setAssistsDelta(e.target.value)}
+              value={assistsFinal}
+              onChange={(e) => setAssistsFinal(e.target.value)}
             />
-          </label>
+            <div className="muted small">Atual: {player.assists}</div>
+          </div>
 
-          <button className="btn" onClick={submitAdd}>
-            Salvar
-          </button>
-        </div>
+          <div className="saveCard">
+            <div className="saveTitle">Salvar alterações</div>
+            <div className="muted small">Aplica os valores finais.</div>
 
-        <div className="muted small">
-          (Depois a gente coloca senha/admin para proteger essa área.)
+            <button className="btn" disabled={saving} onClick={save}>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+
+            <div className="muted small" style={{ marginTop: 8 }}>
+              (Diminuir valores: depois com senha/admin.)
+            </div>
+          </div>
         </div>
       </div>
     </section>
