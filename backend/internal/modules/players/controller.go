@@ -3,6 +3,7 @@ package players
 import (
 	"database/sql"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -112,4 +113,102 @@ func (ctl *Controller) Create(c *gin.Context) {
 	}
 
 	shared.JSON(c, http.StatusCreated, player)
+}
+
+// ✅ UPDATE (multipart/form-data): name, position, photo opcional
+func (ctl *Controller) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var name string
+	var position string
+	var newPhotoURL string
+
+	contentType := c.ContentType()
+
+	// 🔵 Se vier JSON
+	if contentType == "application/json" {
+		var body struct {
+			Name     string `json:"name"`
+			Position string `json:"position"`
+		}
+
+		if err := c.ShouldBindJSON(&body); err != nil {
+			shared.Error(c, http.StatusBadRequest, "json inválido")
+			return
+		}
+
+		name = strings.TrimSpace(body.Name)
+		position = strings.TrimSpace(body.Position)
+
+	} else {
+		// 🟢 multipart/form-data
+		name = strings.TrimSpace(c.PostForm("name"))
+		position = strings.TrimSpace(c.PostForm("position"))
+
+		file, err := c.FormFile("photo")
+		if err == nil && file != nil {
+			ext := strings.ToLower(filepath.Ext(file.Filename))
+			if ext == "" {
+				ext = ".jpg"
+			}
+
+			filename := uuid.New().String() + ext
+			savePath := filepath.Join("uploads", filename)
+
+			if err := c.SaveUploadedFile(file, savePath); err != nil {
+				shared.Error(c, http.StatusInternalServerError, "falha ao salvar foto")
+				return
+			}
+
+			newPhotoURL = "/uploads/" + filename
+		}
+	}
+
+	if id == "" || name == "" || position == "" {
+		shared.Error(c, http.StatusBadRequest, "id, name e position são obrigatórios")
+		return
+	}
+
+	old, err := ctl.service.GetPlayer(id)
+	if err != nil {
+		shared.Error(c, http.StatusNotFound, "jogador não encontrado")
+		return
+	}
+
+	updated, err := ctl.service.UpdatePlayer(id, name, position, newPhotoURL)
+	if err != nil {
+		shared.Error(c, http.StatusInternalServerError, "erro ao atualizar jogador")
+		return
+	}
+
+	// Se trocou foto, apaga antiga
+	if newPhotoURL != "" && old.PhotoURL != "" && old.PhotoURL != newPhotoURL {
+		oldPath := strings.TrimPrefix(old.PhotoURL, "/")
+		_ = os.Remove(oldPath)
+	}
+
+	shared.JSON(c, http.StatusOK, updated)
+}
+
+// ✅ DELETE: deleta jogador e apaga foto do disco (se existir)
+func (ctl *Controller) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	deleted, err := ctl.service.DeletePlayer(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			shared.Error(c, http.StatusNotFound, "jogador não encontrado")
+			return
+		}
+		shared.Error(c, http.StatusInternalServerError, "erro ao deletar jogador")
+		return
+	}
+
+	// apaga foto do disco
+	if deleted.PhotoURL != "" {
+		path := strings.TrimPrefix(deleted.PhotoURL, "/")
+		_ = os.Remove(path)
+	}
+
+	shared.JSON(c, http.StatusOK, deleted)
 }

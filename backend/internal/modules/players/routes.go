@@ -15,9 +15,11 @@ func RegisterRoutes(r *gin.Engine, db *sql.DB) {
 	{
 		grupo.GET("", controller.List)
 		grupo.GET("/:id", controller.GetByID)
-		grupo.POST("/:id/stats", controller.AddStats)
 
-		// ✅ CREATE com upload (multipart/form-data)
-		grupo.POST("", controller.Create)
+		grupo.POST("", controller.Create)       // multipart
+		grupo.PUT("/:id", controller.Update)    // multipart ✅
+		grupo.DELETE("/:id", controller.Delete) // ✅
+
+		grupo.POST("/:id/stats", controller.AddStats) // json
 	}
 }

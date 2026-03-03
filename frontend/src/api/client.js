@@ -5,7 +5,7 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${API_URL}${path}`, {
     headers: isForm
-      ? { ...(rest.headers || {}) } // 🔥 não define Content-Type
+      ? { ...(rest.headers || {}) } // não define Content-Type
       : { "Content-Type": "application/json", ...(rest.headers || {}) },
     ...rest,
   });
@@ -20,29 +20,43 @@ async function request(path, options = {}) {
   return data?.data;
 }
 
+export function resolvePhotoURL(photo_url) {
+  if (!photo_url) return "";
+  if (photo_url.startsWith("http")) return photo_url;
+  return `${API_URL}${photo_url}`;
+}
+
 export const api = {
   listPlayers: () => request("/players"),
-
   getPlayer: (id) => request(`/players/${id}`),
 
-  // 🔥 agora funciona upload
   createPlayer: (formData) =>
-    request("/players", {
-      method: "POST",
-      body: formData,
-      isForm: true,
-    }),
+    request("/players", { method: "POST", body: formData, isForm: true }),
 
   addStats: (id, payload) =>
     request(`/players/${id}/stats`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-};
 
-export function resolvePhotoURL(photo_url) {
-  if (!photo_url) return "";
-  if (photo_url.startsWith("http")) return photo_url;
-  // se veio "/uploads/..." do backend, completa com a URL da API
-  return `${API_URL}${photo_url}`;
-}
+  // ✅ PUT JSON (nome/posição)
+  updatePlayerJSON: (id, payload) =>
+    request(`/players/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // ✅ PUT multipart (nome/posição/foto)
+  updatePlayerForm: (id, formData) =>
+    request(`/players/${id}`, {
+      method: "PUT",
+      body: formData,
+      isForm: true,
+    }),
+
+  // ✅ DELETE
+  deletePlayer: (id) =>
+    request(`/players/${id}`, {
+      method: "DELETE",
+    }),
+};

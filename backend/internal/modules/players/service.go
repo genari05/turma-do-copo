@@ -6,6 +6,8 @@ type Service interface {
 	AddPlayerStats(id string, goalsDelta int, assistsDelta int) (Player, error)
 
 	CreatePlayer(name, position, photoURL string) (Player, error)
+	UpdatePlayer(id, name, position, photoURL string) (Player, error)
+	DeletePlayer(id string) (Player, error) // retorna o jogador deletado (pra pegar photo_url)
 }
 
 type service struct {
@@ -36,4 +38,20 @@ func (s *service) CreatePlayer(name, position, photoURL string) (Player, error) 
 		return Player{}, ErrInvalidPlayer
 	}
 	return s.repo.Create(name, position, photoURL)
+}
+
+// Update: se photoURL vier "", mantém a foto atual
+func (s *service) UpdatePlayer(id, name, position, photoURL string) (Player, error) {
+	if id == "" || name == "" || position == "" {
+		return Player{}, ErrInvalidPlayer
+	}
+	return s.repo.Update(id, name, position, photoURL)
+}
+
+// Delete: retorna o jogador deletado (inclusive photo_url)
+func (s *service) DeletePlayer(id string) (Player, error) {
+	if id == "" {
+		return Player{}, ErrInvalidPlayer
+	}
+	return s.repo.Delete(id)
 }

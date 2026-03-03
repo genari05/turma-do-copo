@@ -1089,3 +1089,21 @@ h2{
   object-fit: contain;
   opacity: 0.95;
 }
+
+/* Danger zone */
+.dangerZone{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.btn.danger{
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.14);
+  font-weight: 950;
+}
