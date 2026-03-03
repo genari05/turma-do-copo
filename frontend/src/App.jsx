@@ -6,7 +6,7 @@ import Header from "./components/Header.jsx";
 
 import Entry from "./pages/entry.jsx";
 import Login from "./pages/login.jsx";
-import Home from "./pages/Home.jsx";
+import Home from "./pages/home.jsx";
 import Squad from "./pages/Squad.jsx";
 import Player from "./pages/Player.jsx";
 import NewPlayer from "./pages/NewPlayer.jsx";
