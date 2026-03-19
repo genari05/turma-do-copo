@@ -91,8 +91,13 @@ func (ctl *Controller) Create(c *gin.Context) {
 			ext = ".jpg"
 		}
 
+		if err := os.MkdirAll("./temp", os.ModePerm); err != nil {
+			shared.Error(c, http.StatusInternalServerError, "falha ao criar pasta temporária: "+err.Error())
+			return
+		}
+
 		tempFilename := uuid.New().String() + ext
-		tempPath := filepath.Join(os.TempDir(), tempFilename)
+		tempPath := "./temp/" + tempFilename
 
 		if err := c.SaveUploadedFile(file, tempPath); err != nil {
 			shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário: "+err.Error())
@@ -159,8 +164,13 @@ func (ctl *Controller) Update(c *gin.Context) {
 				ext = ".jpg"
 			}
 
+			if err := os.MkdirAll("./temp", os.ModePerm); err != nil {
+				shared.Error(c, http.StatusInternalServerError, "falha ao criar pasta temporária: "+err.Error())
+				return
+			}
+
 			tempFilename := uuid.New().String() + ext
-			tempPath := filepath.Join(os.TempDir(), tempFilename)
+			tempPath := "./temp/" + tempFilename
 
 			if err := c.SaveUploadedFile(file, tempPath); err != nil {
 				shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário: "+err.Error())
