@@ -4,7 +4,7 @@ async function request(path, options = {}) {
   const { isForm, ...rest } = options;
 
   const res = await fetch(`${API_URL}${path}`, {
-    credentials: "include", // ✅ envia/recebe cookie de sessão
+    credentials: "include",
     headers: isForm
       ? { ...(rest.headers || {}) }
       : { "Content-Type": "application/json", ...(rest.headers || {}) },
@@ -22,17 +22,29 @@ async function request(path, options = {}) {
 }
 
 export function resolvePhotoURL(photo_url) {
-  if (!photo_url) return "";
-  if (photo_url.startsWith("http")) return photo_url;
+  if (!photo_url) return "/icon.png";
+
+  if (photo_url.startsWith("http://") || photo_url.startsWith("https://")) {
+    return photo_url;
+  }
+
   return `${API_URL}${photo_url}`;
 }
 
 export const api = {
   // auth
   me: () => request("/auth/me"),
+
   login: (password) =>
-    request("/auth/login", { method: "POST", body: JSON.stringify({ password }) }),
-  logout: () => request("/auth/logout", { method: "POST" }),
+    request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+
+  logout: () =>
+    request("/auth/logout", {
+      method: "POST",
+    }),
 
   // players (público)
   listPlayers: () => request("/players"),
@@ -40,16 +52,33 @@ export const api = {
 
   // players (admin)
   createPlayer: (formData) =>
-    request("/players", { method: "POST", body: formData, isForm: true }),
+    request("/players", {
+      method: "POST",
+      body: formData,
+      isForm: true,
+    }),
 
   addStats: (id, payload) =>
-    request(`/players/${id}/stats`, { method: "POST", body: JSON.stringify(payload) }),
+    request(`/players/${id}/stats`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   updatePlayerJSON: (id, payload) =>
-    request(`/players/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    request(`/players/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 
   updatePlayerForm: (id, formData) =>
-    request(`/players/${id}`, { method: "PUT", body: formData, isForm: true }),
+    request(`/players/${id}`, {
+      method: "PUT",
+      body: formData,
+      isForm: true,
+    }),
 
-  deletePlayer: (id) => request(`/players/${id}`, { method: "DELETE" }),
+  deletePlayer: (id) =>
+    request(`/players/${id}`, {
+      method: "DELETE",
+    }),
 };

@@ -14,7 +14,9 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Println("Aviso: .env não carregado localmente, usando variáveis do ambiente")
+	}
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
@@ -31,6 +33,7 @@ func main() {
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORSMiddleware())
 
+	// mantém por compatibilidade com fotos antigas
 	r.Static("/uploads", "./uploads")
 
 	r.POST("/auth/login", auth.Login)
@@ -43,5 +46,9 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	_ = r.Run(":" + port)
+
+	log.Println("Servidor rodando na porta:", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatal(err)
+	}
 }

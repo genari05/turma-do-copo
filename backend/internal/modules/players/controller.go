@@ -95,7 +95,7 @@ func (ctl *Controller) Create(c *gin.Context) {
 		tempPath := filepath.Join(os.TempDir(), tempFilename)
 
 		if err := c.SaveUploadedFile(file, tempPath); err != nil {
-			shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário")
+			shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário: "+err.Error())
 			return
 		}
 
@@ -103,7 +103,7 @@ func (ctl *Controller) Create(c *gin.Context) {
 		_ = os.Remove(tempPath)
 
 		if err != nil {
-			shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary")
+			shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary: "+err.Error())
 			return
 		}
 
@@ -161,7 +161,7 @@ func (ctl *Controller) Update(c *gin.Context) {
 			tempPath := filepath.Join(os.TempDir(), tempFilename)
 
 			if err := c.SaveUploadedFile(file, tempPath); err != nil {
-				shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário")
+				shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário: "+err.Error())
 				return
 			}
 
@@ -169,7 +169,7 @@ func (ctl *Controller) Update(c *gin.Context) {
 			_ = os.Remove(tempPath)
 
 			if err != nil {
-				shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary")
+				shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary: "+err.Error())
 				return
 			}
 

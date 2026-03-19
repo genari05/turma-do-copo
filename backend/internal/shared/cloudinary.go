@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/cloudinary/cloudinary-go/v2"
@@ -9,11 +10,15 @@ import (
 )
 
 func UploadToCloudinary(filePath string) (string, error) {
-	cld, err := cloudinary.NewFromParams(
-		os.Getenv("CLOUDINARY_CLOUD_NAME"),
-		os.Getenv("CLOUDINARY_API_KEY"),
-		os.Getenv("CLOUDINARY_API_SECRET"),
-	)
+	cloudName := os.Getenv("CLOUDINARY_CLOUD_NAME")
+	apiKey := os.Getenv("CLOUDINARY_API_KEY")
+	apiSecret := os.Getenv("CLOUDINARY_API_SECRET")
+
+	if cloudName == "" || apiKey == "" || apiSecret == "" {
+		return "", errors.New("variáveis do Cloudinary não definidas")
+	}
+
+	cld, err := cloudinary.NewFromParams(cloudName, apiKey, apiSecret)
 	if err != nil {
 		return "", err
 	}
@@ -23,6 +28,10 @@ func UploadToCloudinary(filePath string) (string, error) {
 	})
 	if err != nil {
 		return "", err
+	}
+
+	if resp.SecureURL == "" {
+		return "", errors.New("cloudinary retornou URL vazia")
 	}
 
 	return resp.SecureURL, nil
