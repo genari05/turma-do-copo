@@ -3,6 +3,7 @@ package shared
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/cloudinary/cloudinary-go/v2"
@@ -20,19 +21,31 @@ func UploadToCloudinary(filePath string) (string, error) {
 
 	cld, err := cloudinary.NewFromParams(cloudName, apiKey, apiSecret)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("erro ao criar cliente cloudinary: %w", err)
 	}
 
 	resp, err := cld.Upload.Upload(context.Background(), filePath, uploader.UploadParams{
-		Folder: "turma-do-copo/players",
+		Folder:       "turma-do-copo/players",
+		ResourceType: "image",
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("erro no upload cloudinary: %w", err)
 	}
 
-	if resp.SecureURL == "" {
-		return "", errors.New("cloudinary retornou URL vazia")
+	fmt.Println("=== CLOUDINARY RESPONSE ===")
+	fmt.Println("SecureURL:", resp.SecureURL)
+	fmt.Println("URL:", resp.URL)
+	fmt.Println("PublicID:", resp.PublicID)
+
+	// prioridade 1: URL segura
+	if resp.SecureURL != "" {
+		return resp.SecureURL, nil
 	}
 
-	return resp.SecureURL, nil
+	// fallback: URL normal
+	if resp.URL != "" {
+		return resp.URL, nil
+	}
+
+	return "", errors.New("cloudinary retornou URL vazia")
 }
