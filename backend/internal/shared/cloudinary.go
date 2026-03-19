@@ -24,6 +24,9 @@ func UploadToCloudinary(filePath string) (string, error) {
 		return "", fmt.Errorf("erro ao criar cliente cloudinary: %w", err)
 	}
 
+	// força entrega segura
+	cld.Config.URL.Secure = true
+
 	resp, err := cld.Upload.Upload(context.Background(), filePath, uploader.UploadParams{
 		Folder:       "turma-do-copo/players",
 		ResourceType: "image",
@@ -36,15 +39,31 @@ func UploadToCloudinary(filePath string) (string, error) {
 	fmt.Println("SecureURL:", resp.SecureURL)
 	fmt.Println("URL:", resp.URL)
 	fmt.Println("PublicID:", resp.PublicID)
+	fmt.Println("Format:", resp.Format)
+	fmt.Println("ResourceType:", resp.ResourceType)
 
-	// prioridade 1: URL segura
 	if resp.SecureURL != "" {
 		return resp.SecureURL, nil
 	}
 
-	// fallback: URL normal
 	if resp.URL != "" {
 		return resp.URL, nil
+	}
+
+	if resp.PublicID != "" {
+		img, err := cld.Image(resp.PublicID)
+		if err != nil {
+			return "", fmt.Errorf("erro ao preparar URL da imagem: %w", err)
+		}
+
+		url, err := img.String()
+		if err != nil {
+			return "", fmt.Errorf("erro ao montar URL da imagem: %w", err)
+		}
+
+		if url != "" {
+			return url, nil
+		}
 	}
 
 	return "", errors.New("cloudinary retornou URL vazia")
