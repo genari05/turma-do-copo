@@ -108,6 +108,8 @@ func (ctl *Controller) Create(c *gin.Context) {
 		}
 
 		photoURL = imageURL
+		println("=== CREATE NOVO COM CLOUDINARY ===")
+		println("photoURL salva:", photoURL)
 	}
 
 	player, err := ctl.service.CreatePlayer(name, position, photoURL)
@@ -174,6 +176,8 @@ func (ctl *Controller) Update(c *gin.Context) {
 			}
 
 			newPhotoURL = imageURL
+			println("=== UPDATE NOVO COM CLOUDINARY ===")
+			println("newPhotoURL salva:", newPhotoURL)
 		}
 	}
 
