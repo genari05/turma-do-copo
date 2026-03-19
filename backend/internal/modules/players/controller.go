@@ -72,7 +72,7 @@ func (ctl *Controller) AddStats(c *gin.Context) {
 	shared.JSON(c, http.StatusOK, player)
 }
 
-// ✅ CREATE (multipart/form-data) com foto opcional
+// CREATE com foto opcional via Cloudinary
 func (ctl *Controller) Create(c *gin.Context) {
 	name := strings.TrimSpace(c.PostForm("name"))
 	position := strings.TrimSpace(c.PostForm("position"))
@@ -91,15 +91,23 @@ func (ctl *Controller) Create(c *gin.Context) {
 			ext = ".jpg"
 		}
 
-		filename := uuid.New().String() + ext
-		savePath := filepath.Join("uploads", filename)
+		tempFilename := uuid.New().String() + ext
+		tempPath := filepath.Join(os.TempDir(), tempFilename)
 
-		if err := c.SaveUploadedFile(file, savePath); err != nil {
-			shared.Error(c, http.StatusInternalServerError, "falha ao salvar foto")
+		if err := c.SaveUploadedFile(file, tempPath); err != nil {
+			shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário")
 			return
 		}
 
-		photoURL = "/uploads/" + filename
+		imageURL, err := shared.UploadToCloudinary(tempPath)
+		_ = os.Remove(tempPath)
+
+		if err != nil {
+			shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary")
+			return
+		}
+
+		photoURL = imageURL
 	}
 
 	player, err := ctl.service.CreatePlayer(name, position, photoURL)
@@ -115,7 +123,7 @@ func (ctl *Controller) Create(c *gin.Context) {
 	shared.JSON(c, http.StatusCreated, player)
 }
 
-// ✅ UPDATE (multipart/form-data): name, position, photo opcional
+// UPDATE com JSON ou multipart/form-data
 func (ctl *Controller) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -125,7 +133,6 @@ func (ctl *Controller) Update(c *gin.Context) {
 
 	contentType := c.ContentType()
 
-	// 🔵 Se vier JSON
 	if contentType == "application/json" {
 		var body struct {
 			Name     string `json:"name"`
@@ -139,9 +146,7 @@ func (ctl *Controller) Update(c *gin.Context) {
 
 		name = strings.TrimSpace(body.Name)
 		position = strings.TrimSpace(body.Position)
-
 	} else {
-		// 🟢 multipart/form-data
 		name = strings.TrimSpace(c.PostForm("name"))
 		position = strings.TrimSpace(c.PostForm("position"))
 
@@ -152,15 +157,23 @@ func (ctl *Controller) Update(c *gin.Context) {
 				ext = ".jpg"
 			}
 
-			filename := uuid.New().String() + ext
-			savePath := filepath.Join("uploads", filename)
+			tempFilename := uuid.New().String() + ext
+			tempPath := filepath.Join(os.TempDir(), tempFilename)
 
-			if err := c.SaveUploadedFile(file, savePath); err != nil {
-				shared.Error(c, http.StatusInternalServerError, "falha ao salvar foto")
+			if err := c.SaveUploadedFile(file, tempPath); err != nil {
+				shared.Error(c, http.StatusInternalServerError, "falha ao salvar arquivo temporário")
 				return
 			}
 
-			newPhotoURL = "/uploads/" + filename
+			imageURL, err := shared.UploadToCloudinary(tempPath)
+			_ = os.Remove(tempPath)
+
+			if err != nil {
+				shared.Error(c, http.StatusInternalServerError, "falha ao enviar foto para Cloudinary")
+				return
+			}
+
+			newPhotoURL = imageURL
 		}
 	}
 
@@ -169,7 +182,7 @@ func (ctl *Controller) Update(c *gin.Context) {
 		return
 	}
 
-	old, err := ctl.service.GetPlayer(id)
+	_, err := ctl.service.GetPlayer(id)
 	if err != nil {
 		shared.Error(c, http.StatusNotFound, "jogador não encontrado")
 		return
@@ -181,16 +194,10 @@ func (ctl *Controller) Update(c *gin.Context) {
 		return
 	}
 
-	// Se trocou foto, apaga antiga
-	if newPhotoURL != "" && old.PhotoURL != "" && old.PhotoURL != newPhotoURL {
-		oldPath := strings.TrimPrefix(old.PhotoURL, "/")
-		_ = os.Remove(oldPath)
-	}
-
 	shared.JSON(c, http.StatusOK, updated)
 }
 
-// ✅ DELETE: deleta jogador e apaga foto do disco (se existir)
+// DELETE: deleta jogador
 func (ctl *Controller) Delete(c *gin.Context) {
 	id := c.Param("id")
 
@@ -202,12 +209,6 @@ func (ctl *Controller) Delete(c *gin.Context) {
 		}
 		shared.Error(c, http.StatusInternalServerError, "erro ao deletar jogador")
 		return
-	}
-
-	// apaga foto do disco
-	if deleted.PhotoURL != "" {
-		path := strings.TrimPrefix(deleted.PhotoURL, "/")
-		_ = os.Remove(path)
 	}
 
 	shared.JSON(c, http.StatusOK, deleted)
