@@ -13,14 +13,16 @@ function topN(arr, key, n = 7) {
 export default function Home() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   async function load() {
     try {
       setLoading(true);
+      setError("");
       const data = await api.listPlayers();
       setPlayers(data || []);
     } catch (e) {
-      alert(e.message);
+      setError(e.message || "Erro ao carregar os dados.");
     } finally {
       setLoading(false);
     }
@@ -44,18 +46,34 @@ export default function Home() {
       <div className="pageHead">
         <div>
           <h1>Estatísticas do time</h1>
-          <div className="muted">Rankings automáticos com base nos jogadores cadastrados.</div>
+          <div className="muted">
+            Rankings automáticos com base nos jogadores cadastrados.
+          </div>
         </div>
+
         <Link className="btn outline" to="/time">
           Ver Time
         </Link>
       </div>
 
       {loading ? (
-        <div className="muted">Carregando...</div>
+        <div className="card loadingCard">
+          <h2>Carregando estatísticas...</h2>
+          <div className="muted">
+            O servidor pode levar alguns segundos para responder na primeira vez.
+          </div>
+        </div>
+      ) : error ? (
+        <div className="card loadingCard">
+          <h2>Não foi possível carregar</h2>
+          <div className="muted">{error}</div>
+
+          <button className="btn" onClick={load}>
+            Tentar novamente
+          </button>
+        </div>
       ) : (
         <>
-          {/* Mini cards */}
           <div className="gridCards">
             <div className="card mini" data-variant="blue">
               <div className="miniHead">
@@ -85,7 +103,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Rankings modernos lado a lado */}
           <div className="rankGrid">
             <div className="rankCard">
               <div className="rankHeader">

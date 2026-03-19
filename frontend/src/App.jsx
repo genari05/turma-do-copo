@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { api } from "./api/client.js";
+import React from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Header from "./components/Header.jsx";
 
@@ -14,21 +13,14 @@ import NewPlayer from "./pages/NewPlayer.jsx";
 import RequireAdmin from "./components/RequireAdmin.jsx";
 
 export default function App() {
+  const location = useLocation();
 
-  // 🔥 Sempre que der F5 volta para tela principal
-  useEffect(() => {
-    const navEntry = performance.getEntriesByType("navigation")?.[0];
-    const isReload = navEntry?.type === "reload";
-
-    if (isReload) {
-      api.logout().catch(() => {});
-      window.location.replace("/entrada");
-    }
-  }, []);
+  const hideHeaderRoutes = ["/entrada", "/login"];
+  const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
   return (
     <div className="app">
-      <Header />
+      {shouldShowHeader && <Header />}
 
       <main className="container">
         <Routes>

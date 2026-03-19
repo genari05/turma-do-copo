@@ -39,5 +39,9 @@ func main() {
 
 	players.RegisterRoutes(r, database)
 
-	_ = r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	_ = r.Run(":" + port)
 }

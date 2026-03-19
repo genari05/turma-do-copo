@@ -6,12 +6,16 @@ export default function Entry() {
   const nav = useNavigate();
 
   async function enterVisitor() {
-    await api.logout().catch(() => {});
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn("Erro ao deslogar visitante:", err);
+    }
     nav("/inicio");
   }
 
   return (
-    <section>
+    <section className="entrySection">
       <div className="entryCard">
         <h1>Turma do Copo FC</h1>
         <div className="muted">Escolha como deseja entrar.</div>

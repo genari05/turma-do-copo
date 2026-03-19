@@ -1,13 +1,48 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { api } from "../api/client.js";
 
 export default function Header() {
-  const logoSrc = "/logo_time.gif"; // coloque sua imagem na pasta public
+  const logoSrc = "/logo_time.gif";
+  const nav = useNavigate();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadMe() {
+      try {
+        setLoadingAuth(true);
+        const me = await api.me();
+        if (alive) setIsAdmin(me?.role === "admin");
+      } catch (err) {
+        console.warn("Erro ao verificar usuário:", err);
+        if (alive) setIsAdmin(false);
+      } finally {
+        if (alive) setLoadingAuth(false);
+      }
+    }
+
+    loadMe();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn("Erro ao fazer logout:", err);
+    }
+    nav("/entrada", { replace: true });
+  }
 
   return (
     <header className="header">
-
-      {/* LISTRAS PRINCIPAIS */}
       <div className="heroStripes">
         <div className="stripe stripeBlue"></div>
         <div className="stripe stripeWhite"></div>
@@ -26,23 +61,49 @@ export default function Header() {
         </div>
       </div>
 
-      {/* MENU ABAIXO DAS LISTRAS */}
       <div className="menuBar">
         <nav className="nav container">
-          <NavLink to="/inicio" end className={({ isActive }) => isActive ? "navLink active" : "navLink"}>
+          <NavLink
+            to="/inicio"
+            end
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
             Início
           </NavLink>
 
-          <NavLink to="/time" className={({ isActive }) => isActive ? "navLink active" : "navLink"}>
+          <NavLink
+            to="/time"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
             Time
           </NavLink>
 
-          <NavLink to="/novo" className={({ isActive }) => isActive ? "navLink active" : "navLink"}>
-            Jogador
-          </NavLink>
+          {!loadingAuth && isAdmin && (
+            <NavLink
+              to="/novo"
+              className={({ isActive }) =>
+                isActive ? "navLink active" : "navLink"
+              }
+            >
+              Add Jogador
+            </NavLink>
+          )}
+
+          {!loadingAuth && isAdmin && (
+            <button
+              type="button"
+              className="navLink navButton"
+              onClick={handleLogout}
+            >
+              Sair
+            </button>
+          )}
         </nav>
       </div>
-
     </header>
   );
 }

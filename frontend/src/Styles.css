@@ -1150,3 +1150,24 @@ h2{
 @media (max-width: 780px){
   .entryGrid{ grid-template-columns: 1fr; }
 }
+
+.navButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.loadingCard {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  border-radius: 18px;
+}
+
+.entrySection {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+}

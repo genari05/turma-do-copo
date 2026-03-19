@@ -32,7 +32,10 @@ export default function Login() {
           <h1>Login ADM</h1>
           <div className="muted">Acesso administrativo</div>
         </div>
-        <Link className="btn outline" to="/entrada">Voltar</Link>
+
+        <Link className="btn outline" to="/entrada">
+          Voltar
+        </Link>
       </div>
 
       <form className="loginCard" onSubmit={submit}>
@@ -44,7 +47,7 @@ export default function Login() {
           placeholder="Digite a senha"
         />
 
-        <button className="btn" disabled={loading}>
+        <button className="btn" disabled={loading} type="submit">
           {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
